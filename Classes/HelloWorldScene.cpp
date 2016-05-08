@@ -9,6 +9,11 @@ USING_NS_CC;
 
 using namespace cocostudio::timeline;
 
+HelloWorld::~HelloWorld(){
+    delete world;
+    delete debugDraw;
+}
+
 Scene* HelloWorld::createScene()
 {
     // 'scene' is an autorelease object
@@ -27,93 +32,29 @@ Scene* HelloWorld::createScene()
 // on "init" you need to initialize your instance
 bool HelloWorld::init()
 {
-    /**  you can create scene with following comment code instead of using csb file.
-    // 1. super init first
-    if ( !Layer::init() )
-    {
-        return false;
-    }
     
-    Size visibleSize = Director::getInstance()->getVisibleSize();
-    Vec2 origin = Director::getInstance()->getVisibleOrigin();
-
-    /////////////////////////////
-    // 2. add a menu item with "X" image, which is clicked to quit the program
-    //    you may modify it.
-
-    // add a "close" icon to exit the progress. it's an autorelease object
-    auto closeItem = MenuItemImage::create(
-                                           "CloseNormal.png",
-                                           "CloseSelected.png",
-                                           CC_CALLBACK_1(HelloWorld::menuCloseCallback, this));
-    
-	closeItem->setPosition(Vec2(origin.x + visibleSize.width - closeItem->getContentSize().width/2 ,
-                                origin.y + closeItem->getContentSize().height/2));
-
-    // create menu, it's an autorelease object
-    auto menu = Menu::create(closeItem, NULL);
-    menu->setPosition(Vec2::ZERO);
-    this->addChild(menu, 1);
-
-    /////////////////////////////
-    // 3. add your codes below...
-
-    // add a label shows "Hello World"
-    // create and initialize a label
-    
-    auto label = Label::createWithTTF("Hello World", "fonts/Marker Felt.ttf", 24);
-    
-    // position the label on the center of the screen
-    label->setPosition(Vec2(origin.x + visibleSize.width/2,
-                            origin.y + visibleSize.height - label->getContentSize().height));
-
-    // add the label as a child to this layer
-    this->addChild(label, 1);
-
-    // add "HelloWorld" splash screen"
-    auto sprite = Sprite::create("HelloWorld.png");
-
-    // position the sprite on the center of the screen
-    sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
-
-    // add the sprite as a child to this layer
-    this->addChild(sprite, 0);
-    **/
-    
-    //////////////////////////////
-    // 1. super init first
     if ( !Layer::init() )
     {
         return false;
     }
     
     //auto rootNode = CSLoader::createNode("MainScene.csb");
-
     //addChild(rootNode);
-    
     size=Director::getInstance()->getWinSize();
-    
-    
     world =new b2World(b2Vec2(0,-10.0));
-    
     debugDraw=new GLESDebugDraw(PTM_RATIO);
-    
     showall = 0;
     showall += b2Draw::e_shapeBit;
     showall += b2Draw::e_jointBit;
 //    showall += b2Draw::e_aabbBit;
     showall += b2Draw::e_pairBit;
     showall += b2Draw::e_centerOfMassBit;
-    
+    showall +=b2Draw::e_particleBit;
     
     debugDraw->SetFlags(showall);
     shownone=0;
-    
     world->SetDebugDraw(debugDraw);
-    
-    
     world->SetAllowSleeping(true);
-    
     isshowsp=true;
     isshowdebugdraw=true;
     
@@ -122,19 +63,13 @@ bool HelloWorld::init()
     b2Body* groundBody = world->CreateBody(&groundBodyDef);
     b2PolygonShape groundBox;
     
-    //墙底
+    //四面的外框
     groundBox.SetAsBox(size.width / PTM_RATIO/2, 1/PTM_RATIO, b2Vec2(size.width / PTM_RATIO/2,1/PTM_RATIO), 0);
     groundBody->CreateFixture(&groundBox, 0);
-    
-    //墙顶
     groundBox.SetAsBox(size.width / PTM_RATIO/2, 1/PTM_RATIO, b2Vec2(size.width / PTM_RATIO/2,size.height/PTM_RATIO-1/PTM_RATIO), 0);
     groundBody->CreateFixture(&groundBox, 0);
-    
-    //左墙
     groundBox.SetAsBox(1/PTM_RATIO, size.height / PTM_RATIO/2, b2Vec2(1/PTM_RATIO,size.height / PTM_RATIO/2), 0);
     groundBody->CreateFixture(&groundBox, 0);
-    
-    //右墙
     groundBox.SetAsBox(1/PTM_RATIO,  size.height / PTM_RATIO/2, b2Vec2(size.width/PTM_RATIO-1/PTM_RATIO,size.height / PTM_RATIO/2), 0);
     groundBody->CreateFixture(&groundBox, 0);
     
@@ -192,25 +127,26 @@ bool HelloWorld::init()
     addChild(btnmenu);
     
     
-//    auto bricksp = Sprite::create("brick.png");
-//    addChild(bricksp);
-//    
-//    
-//    b2BodyDef bodyDef;
-//    bodyDef.type = b2_dynamicBody;
-//    bodyDef.position.Set(size.width/2/ PTM_RATIO, size.height/2/ PTM_RATIO);
-//    bodyDef.userData = bricksp;
-//    bodyDef.angularVelocity=5.0f;
-//    b2Body * body = world->CreateBody(&bodyDef);
-//    
-//    b2PolygonShape dynamicBox;
-//    dynamicBox.SetAsBox(0.5f, 0.5f);
-//    
-//    b2FixtureDef fixtureDef;
-//    fixtureDef.shape = &dynamicBox;
-//    fixtureDef.friction = 0.3f;
-//    fixtureDef.density = 1.0;
-//    body->CreateFixture(&fixtureDef);
+    
+    //添加粒子
+    b2ParticleSystemDef particleSystemDef;
+    
+    particleSystemDef.radius = 8.0/PTM_RATIO;
+
+    b2ParticleSystem * particleSystem = world->CreateParticleSystem(&particleSystemDef);
+    
+    auto pos = Vec2(size.width/2, size.height/2);
+
+    b2PolygonShape* shape = new b2PolygonShape();
+    shape->SetAsBox(size.width*0.25/PTM_RATIO, size.height*0.1/PTM_RATIO);
+    
+    b2ParticleGroupDef groupDef;
+    groupDef.shape = shape;
+    
+    groupDef.flags = b2_waterParticle;
+//    groupDef.color = b2ParticleColor(100,150,255,255);
+    groupDef.position.Set(pos.x / PTM_RATIO, pos.y / PTM_RATIO);
+    particleSystem->CreateParticleGroup(groupDef);
     
     
     auto touchListener=EventListenerTouchOneByOne::create();
@@ -222,16 +158,14 @@ bool HelloWorld::init()
     
     scheduleUpdate();
     
-
-    
     return true;
 }
 
 void HelloWorld::update(float dt)
 {
     
-    int velocityIterations = 8;
-    int positionIterations = 1;
+    int velocityIterations = 6;
+    int positionIterations = 2;
     
     world->Step(dt, velocityIterations, positionIterations);
     

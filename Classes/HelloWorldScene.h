@@ -4,7 +4,7 @@
 #include "cocos2d.h"
 #include "Box2D/Box2D.h"
 
-#include "GLESRender.hpp"
+#include "GLES-Render.h"
 
 #define PTM_RATIO 32.0f
 
@@ -13,6 +13,7 @@
 class HelloWorld : public cocos2d::Layer
 {
 public:
+    ~HelloWorld();
     // there's no 'id' in cpp, so we recommend returning the class instance pointer
     static cocos2d::Scene* createScene();
 
